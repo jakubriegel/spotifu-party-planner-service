@@ -1,8 +1,5 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.spotify;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -14,8 +11,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Album;
-import pl.poznan.put.cs.project.spotifypartyplanner.model.CoverImage;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
 
 import java.net.URI;
 import java.util.Collection;
@@ -60,11 +60,7 @@ public class SpotifyConnector {
         }
     }
 
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-    private static class AuthorizationResponse {
-        public String accessToken;
-    }
+
 
     public Stream<Track> search(String text) throws Exception {
         var headers = new HttpHeaders();
@@ -86,45 +82,6 @@ public class SpotifyConnector {
                         new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
                         mapDuration(i.durationMs)
                 ));
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class SearchResponse {
-        public Tracks tracks;
-        public Tracks getTracks() {
-            return tracks;
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class Tracks {
-        public List<Item> items;
-        public List<Item> getItems() {
-            return items;
-        }
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    @JsonNaming(PropertyNamingStrategy.SnakeCaseStrategy.class)
-    private static class Item {
-        public String id;
-        public String name;
-        public ItemsAlbum album;
-        public List<ItemsArtist> artists;
-        public int durationMs;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class ItemsAlbum {
-        public String id;
-        public List<ItemsArtist> artists;
-        public String name;
-        public List<CoverImage> images;
-    }
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class ItemsArtist {
-        public String name;
     }
 
     private static String mapArtists(List<ItemsArtist> artists) {

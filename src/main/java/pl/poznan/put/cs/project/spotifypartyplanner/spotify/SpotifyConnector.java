@@ -7,12 +7,14 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Album;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.GenresSeedsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
@@ -38,7 +40,7 @@ public class SpotifyConnector {
     }
 
     // TODO: @Cacheable
-    public String authorize() throws Exception {
+    public String authorize() throws SpotifyAuthorizationException {
         var headers = new HttpHeaders();
         headers.setBasicAuth(authorizationToken);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -62,15 +64,12 @@ public class SpotifyConnector {
 
 
 
-    public Stream<Track> search(String text) throws Exception {
-        var headers = new HttpHeaders();
-        headers.setBearerAuth(authorize());
-        return Stream.of(restTemplate.exchange(
-                URI.create(API_LINK + "/search?q=" + text + "&type=track&market=PL"),
+    public Stream<Track> search(String text) throws SpotifyAuthorizationException {
+        return apiRequest(
+                "/search?q=" + text + "&type=track&market=PL",
                 HttpMethod.GET,
-                new HttpEntity<>(headers),
                 SearchResponse.class
-        )).map(HttpEntity::getBody)
+        ).map(HttpEntity::getBody)
                 .filter(Objects::nonNull)
                 .map(SearchResponse::getTracks)
                 .map(Tracks::getItems)
@@ -94,5 +93,27 @@ public class SpotifyConnector {
         int min = ms / 60_000;
         int s = (ms % 60_000) / 1000;
         return min + ":" + s;
+    }
+
+    public Stream<String> getGenreSeeds() throws Exception {
+        return apiRequest(
+                "/recommendations/available-genre-seeds",
+                HttpMethod.GET,
+                GenresSeedsResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(GenresSeedsResponse::getGenres)
+                .flatMap(Collection::stream);
+    }
+
+    private <B> Stream<ResponseEntity<B>> apiRequest(String path, HttpMethod method, Class<B> bodyType) throws SpotifyAuthorizationException {
+        var headers = new HttpHeaders();
+        headers.setBearerAuth(authorize());
+        return Stream.of(restTemplate.exchange(
+                URI.create(API_LINK + path),
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                bodyType
+        ));
     }
 }

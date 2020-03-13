@@ -26,5 +26,14 @@ public class ExploreService {
         }
     }
 
+    public Stream<String> getGenres() {
+        try {
+            return spotifyConnector.getGenreSeeds();
+        } catch (Exception e) {
+            logger.error(e.getMessage());
+            return Stream.empty();
+        }
+    }
+
     private static Logger logger = LoggerFactory.getLogger(ExploreService.class);
 }

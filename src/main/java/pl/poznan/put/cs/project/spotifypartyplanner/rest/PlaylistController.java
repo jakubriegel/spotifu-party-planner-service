@@ -22,6 +22,7 @@ public class PlaylistController {
         this.service = service;
     }
 
+    // to be removed after implementing events
     @PostMapping("/{eventId}")
     public Playlist postPlaylist(
             @PathVariable String eventId

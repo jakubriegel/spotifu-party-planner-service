@@ -1,12 +1,12 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.service;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
 
 import java.util.stream.Stream;
+
+import static pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyHelper.emptyIfAuthorizationError;
 
 @Service
 public class ExploreService {
@@ -18,22 +18,10 @@ public class ExploreService {
     }
 
     public Stream<Track> search(String text) {
-        try {
-            return spotifyConnector.search(text);
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            return Stream.empty();
-        }
+        return emptyIfAuthorizationError(() -> spotifyConnector.search(text));
     }
 
     public Stream<String> getGenres() {
-        try {
-            return spotifyConnector.getGenreSeeds();
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            return Stream.empty();
-        }
+        return emptyIfAuthorizationError(spotifyConnector::getGenreSeeds);
     }
-
-    private static Logger logger = LoggerFactory.getLogger(ExploreService.class);
 }

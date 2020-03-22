@@ -25,6 +25,8 @@ import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -71,8 +73,9 @@ public class SpotifyConnector {
 
 
     public Stream<Track> search(String text) throws SpotifyAuthorizationException {
+        var encodedQuery = URLEncoder.encode(text, StandardCharsets.UTF_8);
         return apiRequest(
-                "/search?q=" + text + "&type=track&market=PL",
+                "/search?q=" + encodedQuery + "&type=track&market=PL",
                 HttpMethod.GET,
                 SearchResponse.class
         ).map(HttpEntity::getBody)

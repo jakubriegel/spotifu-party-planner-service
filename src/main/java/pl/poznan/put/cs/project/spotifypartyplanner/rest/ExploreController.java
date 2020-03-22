@@ -22,7 +22,9 @@ public class ExploreController {
     }
 
     @GetMapping(value = "search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<ExploreSearchResponse> getSearchResults(@RequestParam String query) {
+    public ResponseEntity<ExploreSearchResponse> getSearchResults(
+            @RequestParam String query
+    ) {
         var tracks = service.search(query).collect(Collectors.toList());
         if (tracks.isEmpty()) return ResponseEntity.noContent().build();
         else return ResponseEntity.ok(new ExploreSearchResponse(tracks, query));

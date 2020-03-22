@@ -5,8 +5,6 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.util.Collections;
-import java.util.List;
 
 @Document
 public class Event {
@@ -16,7 +14,6 @@ public class Event {
     private String location;
     private Instant date;
     private String hostId;
-    private List<String> tracks;
     private boolean open;
 
     public Event(String name, String location, Instant date, String hostId) {
@@ -25,7 +22,6 @@ public class Event {
         this.hostId = hostId;
         this.location = location;
         this.date = date;
-        this.tracks = Collections.emptyList();
         this.open = true;
     }
 
@@ -67,14 +63,6 @@ public class Event {
 
     public void setHostId(String hostId) {
         this.hostId = hostId;
-    }
-
-    public List<String> getTracks() {
-        return tracks;
-    }
-
-    public void setTracks(List<String> tracks) {
-        this.tracks = tracks;
     }
 
     public boolean isOpen() {

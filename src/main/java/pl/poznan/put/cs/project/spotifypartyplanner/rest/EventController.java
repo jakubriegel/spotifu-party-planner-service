@@ -2,6 +2,7 @@ package pl.poznan.put.cs.project.spotifypartyplanner.rest;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,6 +17,7 @@ import java.net.URI;
 
 @RestController
 @RequestMapping("events")
+@CrossOrigin
 public class EventController {
     private final EventsService service;
 

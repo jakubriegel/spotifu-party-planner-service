@@ -30,7 +30,7 @@ public class EventController {
             @RequestParam String userId
     ) {
         var events = service.getEventsByUser(userId);
-        if (events.isEmpty()) return ResponseEntity.notFound().build();
+        if (events.isEmpty()) return ResponseEntity.noContent().build();
         else return ResponseEntity.ok(new UserEventsResponse(userId, events));
     }
 

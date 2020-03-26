@@ -3,7 +3,6 @@ package pl.poznan.put.cs.project.spotifypartyplanner.service;
 import org.springframework.stereotype.Service;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Playlist;
-import pl.poznan.put.cs.project.spotifypartyplanner.model.event.SuggestionsFrom;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
 
@@ -45,17 +44,13 @@ public class EventsService {
     }
 
     private void addGuestsSuggestions(Playlist playlist, List<String> genres, List<String> tracks) throws NoSuchElementException {
-        addSuggestionsFrom(playlist.getSuggestions().getFromGuests(), genres, tracks);
+        addSuggestionsFrom(playlist.getSuggestions().getFromGuests().getTracks(), tracks);
+        addSuggestionsFrom(playlist.getSuggestions().getFromGuests().getGenres(), genres);
         updateTracksWithGuestsSuggestions(playlist, tracks);
     }
 
-    private void addSuggestionsFrom(SuggestionsFrom suggestionsFrom, List<String> genres, List<String> tracks) {
-        addSuggestionsFrom(suggestionsFrom.getTracks(), tracks);
-        addSuggestionsFrom(suggestionsFrom.getGenres(), genres);
-    }
-
     private void addSuggestionsFrom(HashMap<String, Integer> data, List<String> source) {
-        source.forEach(g -> data.put(g, data.computeIfAbsent(g, k -> 0)+1));
+        source.forEach(i -> data.put(i, data.computeIfAbsent(i, k -> 0)+1));
     }
 
     private void updateTracksWithGuestsSuggestions(Playlist playlist, List<String> suggestions) {
@@ -63,6 +58,34 @@ public class EventsService {
         updated.addAll(playlist.getTracks());
         updated.addAll(suggestions);
         playlist.setTracks(new ArrayList<>(updated));
+    }
+
+    public Event removeGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
+        var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
+        removeGuestsSuggestions(event.getPlaylist(), genres, tracks);
+        return repository.save(event);
+    }
+
+    private void removeGuestsSuggestions(Playlist playlist, List<String> genres, List<String> tracks) throws NoSuchElementException {
+        removeSuggestionsFrom(playlist.getSuggestions().getFromGuests().getTracks(), tracks);
+        removeSuggestionsFrom(playlist.getSuggestions().getFromGuests().getGenres(), genres);
+        var tracksToRemove = playlist.getSuggestions()
+                .getFromGuests()
+                .getTracks()
+                .entrySet()
+                .stream()
+                .filter(t -> t.getValue() <= 0)
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
+        removeTracksFromPlaylist(playlist, tracksToRemove);
+    }
+
+    private void removeSuggestionsFrom(HashMap<String, Integer> data, List<String> source) {
+        source.forEach(i -> data.computeIfPresent(i, (key, val) -> val > 0 ? val-1 : 0));
+    }
+
+    private void removeTracksFromPlaylist(Playlist playlist, List<String> tracksIds) {
+        playlist.getTracks().removeAll(tracksIds);
     }
 
 //    public Stream<Track> getTracksProposal(String eventId) throws NoSuchElementException, SpotifyException {

@@ -3,6 +3,7 @@ package pl.poznan.put.cs.project.spotifypartyplanner.rest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -55,12 +56,25 @@ public class EventController {
     }
 
     @PutMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<EventResponse> postGenres(
+    public ResponseEntity<EventResponse> putSuggestions(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
     ) {
         try {
             var updatedEvent = service.addGuestsSuggestions(eventId, request.genres, request.tracks);
+            return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> deleteSuggestions(
+            @RequestBody PlaylistSuggestionsRequest request,
+            @PathVariable String eventId
+    ) {
+        try {
+            var updatedEvent = service.removeGuestsSuggestions(eventId, request.genres, request.tracks);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();

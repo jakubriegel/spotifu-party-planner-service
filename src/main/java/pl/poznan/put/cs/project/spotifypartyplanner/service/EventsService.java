@@ -1,23 +1,21 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.service;
 
 import org.springframework.stereotype.Service;
-import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Playlist;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.SuggestionsFrom;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static java.util.Collections.emptyList;
-import static pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyHelper.emptyIfAuthorizationErrorOrThrow;
 
 @Service
 public class EventsService {
@@ -40,26 +38,42 @@ public class EventsService {
         return repository.insert(event);
     }
 
-    public Event addPlaylistPreference(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
+    public Event addGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
-        addPlaylistPreference(event.getPlaylist().getSuggestions().getGenres(), genres);
-        addPlaylistPreference(event.getPlaylist().getSuggestions().getTracks(), tracks);
+        addGuestsSuggestions(event.getPlaylist(), genres, tracks);
         return repository.save(event);
     }
 
-    private void addPlaylistPreference(HashMap<String, Integer> data, List<String> source) {
+    private void addGuestsSuggestions(Playlist playlist, List<String> genres, List<String> tracks) throws NoSuchElementException {
+        addSuggestionsFrom(playlist.getSuggestions().getFromGuests(), genres, tracks);
+        updateTracksWithGuestsSuggestions(playlist, tracks);
+    }
+
+    private void addSuggestionsFrom(SuggestionsFrom suggestionsFrom, List<String> genres, List<String> tracks) {
+        addSuggestionsFrom(suggestionsFrom.getTracks(), tracks);
+        addSuggestionsFrom(suggestionsFrom.getGenres(), genres);
+    }
+
+    private void addSuggestionsFrom(HashMap<String, Integer> data, List<String> source) {
         source.forEach(g -> data.put(g, data.computeIfAbsent(g, k -> 0)+1));
     }
 
-    public Stream<Track> getTracksProposal(String eventId) throws NoSuchElementException, SpotifyException {
-        var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
-        var tracks = getTopPreferences(event.getPlaylist().getSuggestions().getTracks());
-        var genres = getTopPreferences(event.getPlaylist().getSuggestions().getGenres());
-
-        return emptyIfAuthorizationErrorOrThrow(
-                () -> spotifyConnector.getRecommendations(tracks, emptyList(), defaultTunableParameters)
-        );
+    private void updateTracksWithGuestsSuggestions(Playlist playlist, List<String> suggestions) {
+        var updated = new HashSet<String>();
+        updated.addAll(playlist.getTracks());
+        updated.addAll(suggestions);
+        playlist.setTracks(new ArrayList<>(updated));
     }
+
+//    public Stream<Track> getTracksProposal(String eventId) throws NoSuchElementException, SpotifyException {
+//        var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
+//        var tracks = getTopPreferences(event.getPlaylist().getSuggestions().getTracks());
+//        var genres = getTopPreferences(event.getPlaylist().getSuggestions().getGenres());
+//
+//        return emptyIfAuthorizationErrorOrThrow(
+//                () -> spotifyConnector.getRecommendations(tracks, emptyList(), defaultTunableParameters)
+//        );
+//    }
 
     private static List<String> getTopPreferences(HashMap<String, Integer> preferences) {
         return preferences.entrySet()

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,10 +14,13 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistSuggestionsRequest;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEventsResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
+
+import static pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse.fromEvent;
 
 @RestController
 @RequestMapping("events")
@@ -38,23 +42,23 @@ public class EventController {
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Event> postEvent(
+    ResponseEntity<EventResponse> postEvent(
             @RequestBody Event request
     ) {
         var toCreate = new Event(request.getName(), request.getLocation(), request.getDate(), request.getHostId());
         var event = service.addEvent(toCreate);
-        return ResponseEntity.created(URI.create("/events?userId=" + event.getHostId()))
-                .body(event);
+        return ResponseEntity.created(URI.create("/events/" + event.getId()))
+                .body(fromEvent(event));
     }
 
-    @PostMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Event> postGenres(
+    @PutMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> postGenres(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
     ) {
         try {
-            var updatedEvent = service.addPlaylistPreference(eventId, request.genres, request.tracks);
-            return ResponseEntity.ok(updatedEvent);
+            var updatedEvent = service.addGuestsSuggestions(eventId, request.genres, request.tracks);
+            return ResponseEntity.ok(fromEvent(updatedEvent));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }

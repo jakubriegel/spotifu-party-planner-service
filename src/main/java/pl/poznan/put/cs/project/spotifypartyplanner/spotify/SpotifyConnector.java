@@ -100,7 +100,7 @@ public class SpotifyConnector {
     private static String mapDuration(int ms) {
         int min = ms / 60_000;
         int s = (ms % 60_000) / 1000;
-        return min + ":" + s;
+        return min + ":" + (s > 9 ? s : ("0" + s));
     }
 
     public Stream<String> getGenreSeeds() throws SpotifyAuthorizationException {

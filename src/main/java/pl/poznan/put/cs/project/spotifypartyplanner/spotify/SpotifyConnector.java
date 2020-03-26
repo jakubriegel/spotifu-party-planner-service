@@ -20,9 +20,9 @@ import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyRec
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.GenresSeedsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.RecommendationsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.TracksResponse;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -69,8 +70,6 @@ public class SpotifyConnector {
             throw new SpotifyAuthorizationException(response.toString());
         }
     }
-
-
 
     public Stream<Track> search(String text) throws SpotifyAuthorizationException {
         var encodedQuery = URLEncoder.encode(text, StandardCharsets.UTF_8);
@@ -131,10 +130,10 @@ public class SpotifyConnector {
         return apiRequest(
                 url,
                 HttpMethod.GET,
-                RecommendationsResponse.class
+                TracksResponse.class
         ).map(HttpEntity::getBody)
                 .filter(Objects::nonNull)
-                .map(RecommendationsResponse::getTracks)
+                .map(TracksResponse::getTracks)
                 .flatMap(Collection::stream)
                 .map(i ->  new Track(
                         i.id,
@@ -143,6 +142,29 @@ public class SpotifyConnector {
                         new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
                         mapDuration(i.durationMs)
                 ));
+    }
+
+    public Stream<Track> getTracksById(Set<String> trackIds) throws SpotifyAuthorizationException {
+        if (trackIds.isEmpty()) {
+            return Stream.empty();
+        }
+        return apiRequest(
+                "/tracks?ids=" + String.join(",", trackIds),
+                HttpMethod.GET,
+                TracksResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(TracksResponse::getTracks)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .map(i ->  new Track(
+                        i.id,
+                        i.name,
+                        mapArtists(i.artists),
+                        new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
+                        mapDuration(i.durationMs)
+                ));
+
     }
 
     private <B> Stream<ResponseEntity<B>> apiRequest(

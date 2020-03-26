@@ -16,6 +16,7 @@ import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistS
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEventsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -27,9 +28,11 @@ import static pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.e
 @CrossOrigin
 public class EventController {
     private final EventsService service;
+    private final SpotifyConnector spotifyConnector;
 
-    public EventController(EventsService service) {
+    public EventController(EventsService service, SpotifyConnector spotifyConnector) {
         this.service = service;
+        this.spotifyConnector = spotifyConnector;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, params = "userId")
@@ -38,7 +41,7 @@ public class EventController {
     ) {
         var events = service.getEventsByUser(userId);
         if (events.isEmpty()) return ResponseEntity.noContent().build();
-        else return ResponseEntity.ok(new UserEventsResponse(userId, events));
+        else return ResponseEntity.ok(UserEventsResponse.build(userId, events, spotifyConnector));
     }
 
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -48,7 +51,7 @@ public class EventController {
         var toCreate = new Event(request.getName(), request.getLocation(), request.getDate(), request.getHostId());
         var event = service.addEvent(toCreate);
         return ResponseEntity.created(URI.create("/events/" + event.getId()))
-                .body(fromEvent(event));
+                .body(fromEvent(event, spotifyConnector));
     }
 
     @PutMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -58,7 +61,7 @@ public class EventController {
     ) {
         try {
             var updatedEvent = service.addGuestsSuggestions(eventId, request.genres, request.tracks);
-            return ResponseEntity.ok(fromEvent(updatedEvent));
+            return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }

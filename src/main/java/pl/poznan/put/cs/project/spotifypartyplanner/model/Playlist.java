@@ -1,36 +1,29 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.model;
 
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-
-@Document
 public class Playlist {
-    @Id
-    private String id;
-    private String eventId;
+    private String name;
+    private String spotifyId;
     private PlaylistPreferences preferences = new PlaylistPreferences();
 
     public Playlist() {
+        this.name = null;
+        this.spotifyId = null;
     }
 
-    public Playlist(String eventId) {
-        this.eventId = eventId;
+    public String getName() {
+        return name;
     }
 
-    public String getId() {
-        return id;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public String getSpotifyId() {
+        return spotifyId;
     }
 
-    public String getEventId() {
-        return eventId;
-    }
-
-    public void setEventId(String eventId) {
-        this.eventId = eventId;
+    public void setSpotifyId(String spotifyId) {
+        this.spotifyId = spotifyId;
     }
 
     public PlaylistPreferences getPreferences() {

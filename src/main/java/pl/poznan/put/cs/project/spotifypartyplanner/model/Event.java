@@ -14,6 +14,7 @@ public class Event {
     private String location;
     private Instant date;
     private String hostId;
+    private Playlist playlist;
     private boolean open;
 
     public Event(String name, String location, Instant date, String hostId) {
@@ -22,6 +23,7 @@ public class Event {
         this.hostId = hostId;
         this.location = location;
         this.date = date;
+        this.playlist = new Playlist();
         this.open = true;
     }
 
@@ -63,6 +65,14 @@ public class Event {
 
     public void setHostId(String hostId) {
         this.hostId = hostId;
+    }
+
+    public Playlist getPlaylist() {
+        return playlist;
+    }
+
+    public void setPlaylist(Playlist playlist) {
+        this.playlist = playlist;
     }
 
     public boolean isOpen() {

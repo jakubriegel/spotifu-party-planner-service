@@ -1,6 +1,6 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response;
 
-import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 
 import java.util.List;
 

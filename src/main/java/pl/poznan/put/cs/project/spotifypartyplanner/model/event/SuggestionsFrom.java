@@ -1,8 +1,8 @@
-package pl.poznan.put.cs.project.spotifypartyplanner.model;
+package pl.poznan.put.cs.project.spotifypartyplanner.model.event;
 
 import java.util.HashMap;
 
-public class PlaylistPreferences {
+public class SuggestionsFrom {
     private HashMap<String, Integer> genres = new HashMap<>();
     private HashMap<String, Integer> tracks = new HashMap<>();
 

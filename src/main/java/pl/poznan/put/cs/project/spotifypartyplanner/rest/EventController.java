@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistSuggestionsRequest;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEventsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;

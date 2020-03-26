@@ -1,8 +1,8 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.service;
 
 import org.springframework.stereotype.Service;
-import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
@@ -42,8 +42,8 @@ public class EventsService {
 
     public Event addPlaylistPreference(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
-        addPlaylistPreference(event.getPlaylist().getPreferences().getGenres(), genres);
-        addPlaylistPreference(event.getPlaylist().getPreferences().getTracks(), tracks);
+        addPlaylistPreference(event.getPlaylist().getSuggestions().getGenres(), genres);
+        addPlaylistPreference(event.getPlaylist().getSuggestions().getTracks(), tracks);
         return repository.save(event);
     }
 
@@ -53,8 +53,8 @@ public class EventsService {
 
     public Stream<Track> getTracksProposal(String eventId) throws NoSuchElementException, SpotifyException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
-        var tracks = getTopPreferences(event.getPlaylist().getPreferences().getTracks());
-        var genres = getTopPreferences(event.getPlaylist().getPreferences().getGenres());
+        var tracks = getTopPreferences(event.getPlaylist().getSuggestions().getTracks());
+        var genres = getTopPreferences(event.getPlaylist().getSuggestions().getGenres());
 
         return emptyIfAuthorizationErrorOrThrow(
                 () -> spotifyConnector.getRecommendations(tracks, emptyList(), defaultTunableParameters)

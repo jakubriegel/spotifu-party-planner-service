@@ -1,4 +1,4 @@
-package pl.poznan.put.cs.project.spotifypartyplanner.model;
+package pl.poznan.put.cs.project.spotifypartyplanner.model.event;
 
 
 import org.springframework.data.annotation.Id;

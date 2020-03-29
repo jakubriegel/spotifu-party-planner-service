@@ -5,6 +5,7 @@ import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class EventsService {
@@ -21,4 +22,8 @@ public class EventsService {
     public Event addEvent(Event event) {
         return repository.insert(event);
     }
+
+    public Optional<Event> getEventById(String eventId) {return repository.findById(eventId); }
+
+    public void deleteEvent(String eventId) { repository.deleteById(eventId); }
 }

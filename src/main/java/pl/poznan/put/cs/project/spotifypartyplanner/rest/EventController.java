@@ -2,13 +2,7 @@ package pl.poznan.put.cs.project.spotifypartyplanner.rest;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEventsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
@@ -41,5 +35,22 @@ public class EventController {
         var event = service.addEvent(request);
         return ResponseEntity.created(URI.create("/events?userId=" + event.getHostId()))
                 .body(event);
+    }
+
+    @GetMapping(value = "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Event> getEvent(
+            @PathVariable String eventId
+    ) {
+        var event = service.getEventById(eventId);
+        if (event.isEmpty()) return ResponseEntity.notFound().build();
+        else return ResponseEntity.ok(event.get());
+    }
+
+    @DeleteMapping(value = "/{eventId}")
+    ResponseEntity<Void> deleteEvent(
+            @PathVariable String eventId
+    ) {
+        service.deleteEvent(eventId);
+        return ResponseEntity.noContent().build();
     }
 }

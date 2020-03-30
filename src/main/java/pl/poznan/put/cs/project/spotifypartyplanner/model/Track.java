@@ -9,6 +9,10 @@ public class Track {
 
     public Track() {}
 
+    public Track(String id) {
+        this.id = id;
+    }
+
     public Track(String id, String name, String artist, Album album, String duration) {
         this.id = id;
         this.name = name;

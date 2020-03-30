@@ -1,5 +1,7 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.spotify;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.http.HttpEntity;
@@ -7,24 +9,34 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Album;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyAuthorizationException;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyRecommendationsSeedSizeException;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.GenresSeedsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.TracksResponse;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.google.common.collect.Iterables.partition;
+import static java.util.stream.StreamSupport.stream;
 
 @Component
 public class SpotifyConnector {
@@ -40,7 +52,7 @@ public class SpotifyConnector {
     }
 
     // TODO: @Cacheable
-    public String authorize() throws Exception {
+    public String authorize() throws SpotifyAuthorizationException {
         var headers = new HttpHeaders();
         headers.setBasicAuth(authorizationToken);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
@@ -62,18 +74,13 @@ public class SpotifyConnector {
         }
     }
 
-
-
-    public Stream<Track> search(String text) throws Exception {
+    public Stream<Track> search(String text) throws SpotifyAuthorizationException {
         var encodedQuery = URLEncoder.encode(text, StandardCharsets.UTF_8);
-        var headers = new HttpHeaders();
-        headers.setBearerAuth(authorize());
-        return Stream.of(restTemplate.exchange(
-                URI.create(API_LINK + "/search?q=" + encodedQuery + "&type=track&market=PL"),
+        return apiRequest(
+                "/search?q=" + encodedQuery + "&type=track&market=PL",
                 HttpMethod.GET,
-                new HttpEntity<>(headers),
                 SearchResponse.class
-        )).map(HttpEntity::getBody)
+        ).map(HttpEntity::getBody)
                 .filter(Objects::nonNull)
                 .map(SearchResponse::getTracks)
                 .map(Tracks::getItems)
@@ -96,6 +103,98 @@ public class SpotifyConnector {
     private static String mapDuration(int ms) {
         int min = ms / 60_000;
         int s = (ms % 60_000) / 1000;
-        return min + ":" + s;
+        return min + ":" + (s > 9 ? s : ("0" + s));
     }
+
+    public Stream<String> getGenreSeeds() throws SpotifyAuthorizationException {
+        return apiRequest(
+                "/recommendations/available-genre-seeds",
+                HttpMethod.GET,
+                GenresSeedsResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(GenresSeedsResponse::getGenres)
+                .flatMap(Collection::stream);
+    }
+
+    public Stream<Track> getRecommendations(
+            List<String> seedTracks, List<String> seedGenres, Map<String, Float> targets
+    ) throws SpotifyAuthorizationException, SpotifyRecommendationsSeedSizeException {
+        if (seedTracks.size() + seedGenres.size() > 5) {
+            throw new SpotifyRecommendationsSeedSizeException();
+        }
+        var url = String.format(
+                "/recommendations?seed_tracks%s&seed_genres%s&%s&market=PL",
+                seedTracks.isEmpty() ? "" : "=" + String.join(",", seedTracks),
+                seedGenres.isEmpty() ? "" : "=" + String.join(",", seedGenres),
+                targets.entrySet().stream().map(p -> p.getKey() + "=" + p.getValue()).collect(Collectors.joining("&"))
+        );
+        logger.info(url);
+        return apiRequest(
+                url,
+                HttpMethod.GET,
+                TracksResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(TracksResponse::getTracks)
+                .flatMap(Collection::stream)
+                .map(i ->  new Track(
+                        i.id,
+                        i.name,
+                        mapArtists(i.artists),
+                        new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
+                        mapDuration(i.durationMs)
+                ));
+    }
+
+    public Stream<Track> getTracksById(Set<String> trackIds) {
+        if (trackIds.isEmpty()) {
+            return Stream.empty();
+        }
+
+        return stream(partition(trackIds, 20).spliterator(), false)
+                .flatMap(chunk -> safeApiRequest(
+                        "/tracks?ids=" + String.join(",", chunk),
+                        HttpMethod.GET,
+                        TracksResponse.class
+                ))
+                .map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(TracksResponse::getTracks)
+                .flatMap(Collection::stream)
+                .filter(Objects::nonNull)
+                .map(i ->  new Track(
+                        i.id,
+                        i.name,
+                        mapArtists(i.artists),
+                        new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
+                        mapDuration(i.durationMs)
+                ));
+
+    }
+
+    private <B> Stream<ResponseEntity<B>> apiRequest(
+            String path, HttpMethod method, Class<B> bodyType
+    ) throws SpotifyAuthorizationException {
+        var headers = new HttpHeaders();
+        headers.setBearerAuth(authorize());
+        return Stream.of(restTemplate.exchange(
+                URI.create(API_LINK + path),
+                method,
+                new HttpEntity<>(headers),
+                bodyType
+        ));
+    }
+
+    private <B> Stream<ResponseEntity<B>> safeApiRequest(
+            String path, HttpMethod method, Class<B> bodyType
+    ) {
+        try {
+            return apiRequest(path, method, bodyType);
+        } catch (SpotifyAuthorizationException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private final static Logger logger = LoggerFactory.getLogger(SpotifyConnector.class);
 }

@@ -4,7 +4,10 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Event;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EventRepository extends MongoRepository<Event, String> {
     List<Event> findByHostId(String hostId);
+
+    Optional<Event> findById(String Id);
 }

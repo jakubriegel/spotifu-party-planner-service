@@ -35,6 +35,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.Iterables.partition;
+import static java.util.stream.StreamSupport.stream;
+
 @Component
 public class SpotifyConnector {
 
@@ -144,15 +147,18 @@ public class SpotifyConnector {
                 ));
     }
 
-    public Stream<Track> getTracksById(Set<String> trackIds) throws SpotifyAuthorizationException {
+    public Stream<Track> getTracksById(Set<String> trackIds) {
         if (trackIds.isEmpty()) {
             return Stream.empty();
         }
-        return apiRequest(
-                "/tracks?ids=" + String.join(",", trackIds),
-                HttpMethod.GET,
-                TracksResponse.class
-        ).map(HttpEntity::getBody)
+
+        return stream(partition(trackIds, 20).spliterator(), false)
+                .flatMap(chunk -> safeApiRequest(
+                        "/tracks?ids=" + String.join(",", chunk),
+                        HttpMethod.GET,
+                        TracksResponse.class
+                ))
+                .map(HttpEntity::getBody)
                 .filter(Objects::nonNull)
                 .map(TracksResponse::getTracks)
                 .flatMap(Collection::stream)
@@ -174,10 +180,20 @@ public class SpotifyConnector {
         headers.setBearerAuth(authorize());
         return Stream.of(restTemplate.exchange(
                 URI.create(API_LINK + path),
-                HttpMethod.GET,
+                method,
                 new HttpEntity<>(headers),
                 bodyType
         ));
+    }
+
+    private <B> Stream<ResponseEntity<B>> safeApiRequest(
+            String path, HttpMethod method, Class<B> bodyType
+    ) {
+        try {
+            return apiRequest(path, method, bodyType);
+        } catch (SpotifyAuthorizationException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private final static Logger logger = LoggerFactory.getLogger(SpotifyConnector.class);

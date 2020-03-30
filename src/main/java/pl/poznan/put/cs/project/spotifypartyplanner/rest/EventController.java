@@ -80,4 +80,21 @@ public class EventController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @GetMapping(value = "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<Event> getEvent(
+            @PathVariable String eventId
+    ) {
+        var event = service.getEventById(eventId);
+        if (event.isEmpty()) return ResponseEntity.notFound().build();
+        else return ResponseEntity.ok(event.get());
+    }
+
+    @DeleteMapping(value = "/{eventId}")
+    ResponseEntity<Void> deleteEvent(
+            @PathVariable String eventId
+    ) {
+        service.deleteEvent(eventId);
+        return ResponseEntity.noContent().build();
+    }
 }

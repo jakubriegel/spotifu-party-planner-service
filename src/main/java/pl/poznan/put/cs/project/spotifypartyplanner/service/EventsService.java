@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class EventsService {
@@ -36,6 +37,10 @@ public class EventsService {
     public Event addEvent(Event event) {
         return repository.insert(event);
     }
+
+    public Optional<Event> getEventById(String eventId) {return repository.findById(eventId); }
+
+    public void deleteEvent(String eventId) { repository.deleteById(eventId); }
 
     public Event addGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);

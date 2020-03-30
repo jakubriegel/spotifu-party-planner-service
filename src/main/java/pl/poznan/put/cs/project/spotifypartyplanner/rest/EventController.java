@@ -36,6 +36,15 @@ public class EventController {
         this.spotifyConnector = spotifyConnector;
     }
 
+    @GetMapping(value = "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    ResponseEntity<EventResponse> getEvent(
+            @PathVariable String eventId
+    ) {
+        var event = service.getEventById(eventId);
+        if (event.isEmpty()) return ResponseEntity.notFound().build();
+        else return ResponseEntity.ok(fromEvent(event.get(), spotifyConnector));
+    }
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE, params = "userId")
     ResponseEntity<UserEventsResponse> getUserEvents(
             @RequestParam String userId
@@ -53,6 +62,14 @@ public class EventController {
         var event = service.addEvent(toCreate);
         return ResponseEntity.created(URI.create("/events/" + event.getId()))
                 .body(fromEvent(event, spotifyConnector));
+    }
+
+    @DeleteMapping(value = "/{eventId}")
+    ResponseEntity<Void> deleteEvent(
+            @PathVariable String eventId
+    ) {
+        service.deleteEvent(eventId);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping(value = "/{eventId}/suggestions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -79,22 +96,5 @@ public class EventController {
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
-    }
-
-    @GetMapping(value = "/{eventId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<Event> getEvent(
-            @PathVariable String eventId
-    ) {
-        var event = service.getEventById(eventId);
-        if (event.isEmpty()) return ResponseEntity.notFound().build();
-        else return ResponseEntity.ok(event.get());
-    }
-
-    @DeleteMapping(value = "/{eventId}")
-    ResponseEntity<Void> deleteEvent(
-            @PathVariable String eventId
-    ) {
-        service.deleteEvent(eventId);
-        return ResponseEntity.noContent().build();
     }
 }

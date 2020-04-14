@@ -14,8 +14,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class EventsService {
@@ -109,6 +109,10 @@ public class EventsService {
                 .sorted(Comparator.comparingInt(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+
+    public void synchronizePlaylistWithSpotify(String eventId, String userToken) {
+
     }
 
 }

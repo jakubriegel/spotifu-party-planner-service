@@ -1,21 +1,28 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.service;
 
 import org.springframework.stereotype.Service;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Playlist;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.event.SuggestionsFrom;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Stream;
+
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toUnmodifiableList;
+import static pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyHelper.emptyIfAuthorizationErrorOrThrow;
 
 @Service
 public class EventsService {
@@ -42,9 +49,10 @@ public class EventsService {
 
     public void deleteEvent(String eventId) { repository.deleteById(eventId); }
 
-    public Event addGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
+    public Event addGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException, SpotifyException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
         addGuestsSuggestions(event.getPlaylist(), genres, tracks);
+        updateTracksRecommendations(event);
         return repository.save(event);
     }
 
@@ -54,7 +62,7 @@ public class EventsService {
         updateTracksWithGuestsSuggestions(playlist, tracks);
     }
 
-    private void addSuggestionsFrom(HashMap<String, Integer> data, List<String> source) {
+    private void addSuggestionsFrom(Map<String, Integer> data, List<String> source) {
         source.forEach(i -> data.put(i, data.computeIfAbsent(i, k -> 0)+1));
     }
 
@@ -65,9 +73,10 @@ public class EventsService {
         playlist.setTracks(new ArrayList<>(updated));
     }
 
-    public Event removeGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException {
+    public Event removeGuestsSuggestions(String eventId, List<String> genres, List<String> tracks) throws NoSuchElementException, SpotifyException {
         var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
         removeGuestsSuggestions(event.getPlaylist(), genres, tracks);
+        updateTracksRecommendations(event);
         return repository.save(event);
     }
 
@@ -81,11 +90,11 @@ public class EventsService {
                 .stream()
                 .filter(t -> t.getValue() <= 0)
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .collect(toUnmodifiableList());
         removeTracksFromPlaylist(playlist, tracksToRemove);
     }
 
-    private void removeSuggestionsFrom(HashMap<String, Integer> data, List<String> source) {
+    private void removeSuggestionsFrom(Map<String, Integer> data, List<String> source) {
         source.forEach(i -> data.computeIfPresent(i, (key, val) -> val > 0 ? val-1 : 0));
     }
 
@@ -93,22 +102,41 @@ public class EventsService {
         playlist.getTracks().removeAll(tracksIds);
     }
 
-//    public Stream<Track> getTracksProposal(String eventId) throws NoSuchElementException, SpotifyException {
-//        var event = repository.findById(eventId).orElseThrow(NoSuchElementException::new);
-//        var tracks = getTopPreferences(event.getPlaylist().getSuggestions().getTracks());
-//        var genres = getTopPreferences(event.getPlaylist().getSuggestions().getGenres());
-//
-//        return emptyIfAuthorizationErrorOrThrow(
-//                () -> spotifyConnector.getRecommendations(tracks, emptyList(), defaultTunableParameters)
-//        );
-//    }
+    public void updateTracksRecommendations(Event event) throws SpotifyException {
+        var updated = getTracksRecommendations(event).collect(toMap(Track::getId, t -> 1));
+        event.getPlaylist().getSuggestions().getFromRecommendations().setTracks(updated);
+    }
 
-    private static List<String> getTopPreferences(HashMap<String, Integer> preferences) {
+    private Stream<Track> getTracksRecommendations(Event event) throws SpotifyException {
+        var fromGuests = event.getPlaylist().getSuggestions().getFromGuests();
+        return getTracksRecommendations(fromGuests);
+    }
+
+    private Stream<Track> getTracksRecommendations(SuggestionsFrom fromGuests) throws SpotifyException {
+        var genres = getTopPreferences(fromGuests.getGenres());
+        if (genres.size() == 5) {
+            return emptyIfAuthorizationErrorOrThrow(
+                    () -> spotifyConnector.getRecommendations(emptyList(), genres, defaultTunableParameters)
+            );
+        } else {
+            var tracks = getTopPreferences(fromGuests.getTracks(), 5 - genres.size());
+            return emptyIfAuthorizationErrorOrThrow(
+                    () -> spotifyConnector.getRecommendations(tracks, genres, defaultTunableParameters)
+            );
+        }
+    }
+
+    private static List<String> getTopPreferences(Map<String, Integer> preferences) {
+        return getTopPreferences(preferences, 5);
+    }
+
+    private static List<String> getTopPreferences(Map<String, Integer> preferences, int max) {
         return preferences.entrySet()
                 .stream()
                 .sorted(Comparator.comparingInt(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
-                .collect(Collectors.toList());
+                .limit(max)
+                .collect(toUnmodifiableList());
     }
 
 }

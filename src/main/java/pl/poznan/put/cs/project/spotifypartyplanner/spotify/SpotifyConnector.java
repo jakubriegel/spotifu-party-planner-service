@@ -124,12 +124,11 @@ public class SpotifyConnector {
             throw new SpotifyRecommendationsSeedSizeException();
         }
         var url = String.format(
-                "/recommendations?seed_tracks%s&seed_genres%s&%s&market=PL",
+                "/recommendations?seed_tracks%s&seed_genres%s&%s&limit=15&market=PL",
                 seedTracks.isEmpty() ? "" : "=" + String.join(",", seedTracks),
                 seedGenres.isEmpty() ? "" : "=" + String.join(",", seedGenres),
                 targets.entrySet().stream().map(p -> p.getKey() + "=" + p.getValue()).collect(Collectors.joining("&"))
         );
-        logger.info(url);
         return apiRequest(
                 url,
                 HttpMethod.GET,
@@ -176,6 +175,7 @@ public class SpotifyConnector {
     private <B> Stream<ResponseEntity<B>> apiRequest(
             String path, HttpMethod method, Class<B> bodyType
     ) throws SpotifyAuthorizationException {
+        logger.info("{} {}", method, path);
         var headers = new HttpHeaders();
         headers.setBearerAuth(authorize());
         return Stream.of(restTemplate.exchange(

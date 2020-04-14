@@ -18,6 +18,7 @@ import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEven
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -76,7 +77,7 @@ public class EventController {
     public ResponseEntity<EventResponse> putSuggestions(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
-    ) {
+    ) throws SpotifyException {
         try {
             var updatedEvent = service.addGuestsSuggestions(eventId, request.genres, request.tracks);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
@@ -89,7 +90,7 @@ public class EventController {
     public ResponseEntity<EventResponse> deleteSuggestions(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
-    ) {
+    ) throws SpotifyException {
         try {
             var updatedEvent = service.removeGuestsSuggestions(eventId, request.genres, request.tracks);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));

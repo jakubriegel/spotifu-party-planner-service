@@ -19,6 +19,7 @@ import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEven
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -103,7 +104,7 @@ public class EventController {
     public ResponseEntity<Void> putSynchronize(
             @RequestBody PlaylistSynchronizeRequest request,
             @PathVariable String eventId
-    ) {
+    ) throws SpotifyException {
         service.synchronizePlaylistWithSpotify(eventId, request.userToken);
         return ResponseEntity.ok().build();
     }

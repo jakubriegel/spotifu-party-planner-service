@@ -6,6 +6,7 @@ public class Track {
     private String artist;
     private Album album;
     private String duration;
+    private String uri;
 
     public Track() {}
 
@@ -13,12 +14,13 @@ public class Track {
         this.id = id;
     }
 
-    public Track(String id, String name, String artist, Album album, String duration) {
+    public Track(String id, String name, String artist, Album album, String duration, String uri) {
         this.id = id;
         this.name = name;
         this.artist = artist;
         this.album = album;
         this.duration = duration;
+        this.uri = uri;
     }
 
     public String getId() {
@@ -59,5 +61,13 @@ public class Track {
 
     public void setDuration(String duration) {
         this.duration = duration;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
     }
 }

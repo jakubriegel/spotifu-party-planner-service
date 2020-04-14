@@ -21,8 +21,11 @@ import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationR
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.GenresSeedsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SpotifyPlaylistResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.TracksResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.request.AbstractSpotifyRequest;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.request.PlaylistRequest;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -31,6 +34,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -90,7 +94,8 @@ public class SpotifyConnector {
                         i.name,
                         mapArtists(i.artists),
                         new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
-                        mapDuration(i.durationMs)
+                        mapDuration(i.durationMs),
+                        i.uri
                 ));
     }
 
@@ -143,7 +148,8 @@ public class SpotifyConnector {
                         i.name,
                         mapArtists(i.artists),
                         new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
-                        mapDuration(i.durationMs)
+                        mapDuration(i.durationMs),
+                        i.uri
                 ));
     }
 
@@ -168,21 +174,64 @@ public class SpotifyConnector {
                         i.name,
                         mapArtists(i.artists),
                         new Album(i.album.id, i.album.name, mapArtists(i.album.artists), i.album.images),
-                        mapDuration(i.durationMs)
+                        mapDuration(i.durationMs),
+                        i.uri
                 ));
+    }
 
+    public Optional<String> createSpotifyPlaylist(
+            String userId, String token, String name, String description
+    ) throws SpotifyAuthorizationException {
+        var headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return apiRequest(
+                String.format("/users/%s/playlists", URLEncoder.encode(userId, StandardCharsets.UTF_8)),
+                HttpMethod.POST,
+                new HttpEntity<>(new PlaylistRequest(name, description), headers),
+                SpotifyPlaylistResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(SpotifyPlaylistResponse::getId)
+                .findFirst();
+    }
+
+    public void replaceTracksOnPlaylist(
+            String playlistId, List <String> uris, String token
+    ) throws SpotifyAuthorizationException {
+        var headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        var url = String.format("/playlists/%s/tracks?uris=%s", playlistId, String.join(",", uris));
+        apiRequest(
+                url,
+                HttpMethod.PUT,
+                new HttpEntity<>(headers),
+                Void.class
+        );
     }
 
     private <B> Stream<ResponseEntity<B>> apiRequest(
-            String path, HttpMethod method, Class<B> bodyType
+            String path, HttpMethod method, Class<B> responseType
     ) throws SpotifyAuthorizationException {
-        var headers = new HttpHeaders();
-        headers.setBearerAuth(authorize());
+        return apiRequest(path, method, new HttpEntity<>(new HttpHeaders()), responseType);
+    }
+
+    private <B> Stream<ResponseEntity<B>> apiRequest(
+            String path, HttpMethod method, HttpEntity<AbstractSpotifyRequest> request, Class<B> responseType
+    ) throws SpotifyAuthorizationException {
+        if (!request.getHeaders().containsKey("Authorization")) {
+            var headers = new HttpHeaders();
+            for(var h : request.getHeaders().entrySet()) {
+                headers.addAll(h.getKey(), h.getValue());
+            }
+            headers.setBearerAuth(authorize());
+            request = new HttpEntity<>(request.getBody(), headers);
+        }
         return Stream.of(restTemplate.exchange(
                 URI.create(API_LINK + path),
                 method,
-                new HttpEntity<>(headers),
-                bodyType
+                request,
+                responseType
         ));
     }
 

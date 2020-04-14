@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistSuggestionsRequest;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistSynchronizeRequest;
+import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.request.PlaylistTracksRequest;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.UserEventsResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.rest.model.response.event.EventResponse;
 import pl.poznan.put.cs.project.spotifypartyplanner.service.EventsService;
@@ -94,6 +95,32 @@ public class EventController {
     ) {
         try {
             var updatedEvent = service.removeGuestsSuggestions(eventId, request.genres, request.tracks);
+            return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PutMapping(value = "/{eventId}/tracks", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> putTracks(
+            @RequestBody PlaylistTracksRequest request,
+            @PathVariable String eventId
+    ) {
+        try {
+            var updatedEvent = service.addTracks(eventId, request.trackIds);
+            return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping(value = "/{eventId}/tracks", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<EventResponse> deleteTracks(
+            @RequestBody PlaylistTracksRequest request,
+            @PathVariable String eventId
+    ) {
+        try {
+            var updatedEvent = service.removeTracks(eventId, request.trackIds);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();

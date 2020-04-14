@@ -115,6 +115,24 @@ public class EventsService {
                 .collect(Collectors.toList());
     }
 
+    public Event addTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.addAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
+    public Event removeTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.removeAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
     public void synchronizePlaylistWithSpotify(String eventId, String userToken) throws SpotifyException {
         var event = getEventById(eventId).orElseThrow(NoSuchElementException::new);
 

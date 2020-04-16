@@ -1,10 +1,12 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.service;
 
 import org.springframework.stereotype.Service;
+import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Event;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.event.Playlist;
 import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,8 +16,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toUnmodifiableList;
 
 @Service
 public class EventsService {
@@ -109,6 +113,52 @@ public class EventsService {
                 .sorted(Comparator.comparingInt(Map.Entry::getValue))
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
+    }
+
+    public Event addTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.addAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
+    public Event removeTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.removeAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
+    public void synchronizePlaylistWithSpotify(String eventId, String userToken) throws SpotifyException {
+        var event = getEventById(eventId).orElseThrow(NoSuchElementException::new);
+
+        if (event.getPlaylist().getSpotifyId() == null) {
+            var name = String.format("%s Playlist", event.getName());
+            var playlistId = spotifyConnector.createSpotifyPlaylist(
+                    event.getHostId(), userToken, name, ""
+            ).orElseThrow(NullPointerException::new);
+            event.getPlaylist().setSpotifyId(playlistId);
+            event.getPlaylist().setName(name);
+        }
+
+        var tracks = Optional.of(event)
+                .map(Event::getPlaylist)
+                .map(Playlist::getTracks)
+                .map(HashSet::new)
+                .map(spotifyConnector::getTracksById)
+                .get()
+                .map(Track::getUri)
+                .collect(toUnmodifiableList());
+
+        if (tracks.size() > 0) {
+            spotifyConnector.replaceTracksOnPlaylist(event.getPlaylist().getSpotifyId(), tracks, userToken);
+        }
+
+        repository.save(event);
     }
 
 }

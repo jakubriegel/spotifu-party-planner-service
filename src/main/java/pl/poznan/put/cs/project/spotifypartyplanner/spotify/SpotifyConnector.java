@@ -198,7 +198,6 @@ public class SpotifyConnector {
     public void replaceTracksOnPlaylist(
             String playlistId, List <String> uris, String token
     ) throws SpotifyAuthorizationException {
-        logger.info("{} {}", method, path);
         var headers = new HttpHeaders();
         headers.setBearerAuth(token);
         var url = String.format("/playlists/%s/tracks?uris=%s", playlistId, String.join(",", uris));

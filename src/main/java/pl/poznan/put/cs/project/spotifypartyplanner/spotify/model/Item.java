@@ -8,4 +8,5 @@ public class Item extends SpotifyResponse {
     public ItemsAlbum album;
     public List<ItemsArtist> artists;
     public int durationMs;
+    public String uri;
 }

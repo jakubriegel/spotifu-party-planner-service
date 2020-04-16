@@ -139,4 +139,50 @@ public class EventsService {
                 .collect(toUnmodifiableList());
     }
 
+    public Event addTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.addAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
+    public Event removeTracks(String eventId, List<String> trackIds) {
+        return getEventById(eventId).map(e -> {
+            var tracks = new HashSet<>(e.getPlaylist().getTracks());
+            tracks.removeAll(trackIds);
+            e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(repository::save).orElseThrow(NoSuchElementException::new);
+    }
+
+    public void synchronizePlaylistWithSpotify(String eventId, String userToken) throws SpotifyException {
+        var event = getEventById(eventId).orElseThrow(NoSuchElementException::new);
+
+        if (event.getPlaylist().getSpotifyId() == null) {
+            var name = String.format("%s Playlist", event.getName());
+            var playlistId = spotifyConnector.createSpotifyPlaylist(
+                    event.getHostId(), userToken, name, ""
+            ).orElseThrow(NullPointerException::new);
+            event.getPlaylist().setSpotifyId(playlistId);
+            event.getPlaylist().setName(name);
+        }
+
+        var tracks = Optional.of(event)
+                .map(Event::getPlaylist)
+                .map(Playlist::getTracks)
+                .map(HashSet::new)
+                .map(spotifyConnector::getTracksById)
+                .get()
+                .map(Track::getUri)
+                .collect(toUnmodifiableList());
+
+        if (tracks.size() > 0) {
+            spotifyConnector.replaceTracksOnPlaylist(event.getPlaylist().getSpotifyId(), tracks, userToken);
+        }
+
+        repository.save(event);
+    }
+
 }

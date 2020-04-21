@@ -3,6 +3,7 @@ package pl.poznan.put.cs.project.spotifypartyplanner.model.event;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.PersistenceConstructor;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -19,18 +20,19 @@ public class Event {
     private Playlist playlist;
     private boolean open;
 
-    public Event(String name, String location, Instant date, String hostId, String hostname) {
-        this.id = null;
+    @JsonCreator
+    @PersistenceConstructor
+    public Event(String id, String name, String location, Instant date, String hostId, String hostname, Playlist playlist, boolean open) {
+        this.id = id;
         this.name = name;
-        this.hostId = hostId;
-        this.hostname = hostname;
         this.location = location;
         this.date = date;
-        this.playlist = new Playlist();
-        this.open = true;
+        this.hostId = hostId;
+        this.hostname = hostname;
+        this.playlist = playlist;
+        this.open = open;
     }
 
-    @JsonCreator
     public Event(String name, String location, Instant date, String hostId) {
         this.id = null;
         this.name = name;

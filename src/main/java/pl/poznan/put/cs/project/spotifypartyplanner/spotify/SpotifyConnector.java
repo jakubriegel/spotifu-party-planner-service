@@ -143,7 +143,7 @@ public class SpotifyConnector {
             throw new SpotifyRecommendationsSeedSizeException();
         }
         var url = String.format(
-                "/recommendations?seed_tracks%s&seed_genres%s&%s&limit=30&market=PL",
+                "/recommendations?seed_tracks%s&seed_genres%s&%s&limit=50&market=PL",
                 seedTracks.isEmpty() ? "" : "=" + String.join(",", seedTracks),
                 seedGenres.isEmpty() ? "" : "=" + String.join(",", seedGenres),
                 targets.entrySet().stream().map(p -> p.getKey() + "=" + p.getValue()).collect(Collectors.joining("&"))

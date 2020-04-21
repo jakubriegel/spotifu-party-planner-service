@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toUnmodifiableList;
+import static java.util.stream.Stream.empty;
 import static pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyHelper.emptyIfAuthorizationErrorOrThrow;
 
 @Service
@@ -188,11 +189,12 @@ public class EventsService {
                 .map(Playlist::getTracks)
                 .map(HashSet::new)
                 .map(spotifyConnector::getTracksById)
-                .get()
+                .orElse(empty())
                 .map(Track::getUri)
                 .collect(toUnmodifiableList());
 
         if (tracks.size() > 0) {
+            assert event.getPlaylist() != null;
             spotifyConnector.replaceTracksOnPlaylist(event.getPlaylist().getSpotifyId(), tracks, userToken);
         }
 

@@ -60,7 +60,9 @@ public class EventsService {
                 .ifPresent(event::setHostname);
     }
 
-    public Optional<Event> getEventById(String eventId) {return repository.findById(eventId); }
+    public Optional<Event> getEventById(String eventId) {
+        return repository.findById(eventId);
+    }
 
     public void deleteEvent(String eventId) { repository.deleteById(eventId); }
 
@@ -124,7 +126,10 @@ public class EventsService {
 
     private Stream<Track> getTracksRecommendations(Event event) throws SpotifyException {
         var fromGuests = event.getPlaylist().getSuggestions().getFromGuests();
-        return getTracksRecommendations(fromGuests);
+        var currentTracks = new HashSet<>(event.getPlaylist().getTracks());
+        return getTracksRecommendations(fromGuests)
+                .filter(t -> !currentTracks.contains(t.getId()))
+                .limit(24);
     }
 
     private Stream<Track> getTracksRecommendations(SuggestionsFrom fromGuests) throws SpotifyException {
@@ -133,11 +138,13 @@ public class EventsService {
             return emptyIfAuthorizationErrorOrThrow(
                     () -> spotifyConnector.getRecommendations(emptyList(), genres, defaultTunableParameters)
             );
-        } else {
+        } else if (fromGuests.getTracks().size() > 0) {
             var tracks = getTopPreferences(fromGuests.getTracks(), 5 - genres.size());
             return emptyIfAuthorizationErrorOrThrow(
                     () -> spotifyConnector.getRecommendations(tracks, genres, defaultTunableParameters)
             );
+        } else {
+            return empty();
         }
     }
 
@@ -160,6 +167,11 @@ public class EventsService {
             tracks.addAll(trackIds);
             e.getPlaylist().setTracks(new ArrayList<>(tracks));
             return e;
+        }).map(e -> {
+            try {
+                updateTracksRecommendations(e);
+            } catch (SpotifyException ignored) {}
+            return e;
         }).map(repository::save).orElseThrow(NoSuchElementException::new);
     }
 
@@ -168,6 +180,11 @@ public class EventsService {
             var tracks = new HashSet<>(e.getPlaylist().getTracks());
             tracks.removeAll(trackIds);
             e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            return e;
+        }).map(e -> {
+            try {
+                updateTracksRecommendations(e);
+            } catch (SpotifyException ignored) {}
             return e;
         }).map(repository::save).orElseThrow(NoSuchElementException::new);
     }

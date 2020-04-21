@@ -11,6 +11,7 @@ public class EventResponse {
     public String location;
     public Instant date;
     public String hostId;
+    public String hostname;
     public PlaylistResponse playlist;
     public boolean open;
 
@@ -22,6 +23,7 @@ public class EventResponse {
         response.date = event.getDate();
         response.hostId = event.getHostId();
         response.playlist = PlaylistResponse.fromPlaylist(event.getPlaylist(), spotifyConnector);
+        response.hostname = event.getHostname();
         response.open = event.isOpen();
         return  response;
     }

@@ -8,15 +8,7 @@ import pl.poznan.put.cs.project.spotifypartyplanner.repository.EventRepository;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.SpotifyConnector;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyException;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -39,7 +31,21 @@ public class EventsService {
     }
 
     public Event addEvent(Event event) {
+        fetchHostname(event);
         return repository.insert(event);
+    }
+
+    private void fetchHostname(Event event) {
+        Optional.of(event)
+                .map(Event::getHostId)
+                .flatMap(hostId -> {
+                    try {
+                        return spotifyConnector.getDisplayname(hostId);
+                    } catch (SpotifyException ignored) {
+                        return Optional.empty();
+                    }
+                })
+                .ifPresent(event::setHostname);
     }
 
     public Optional<Event> getEventById(String eventId) {return repository.findById(eventId); }

@@ -42,7 +42,21 @@ public class EventsService {
     }
 
     public Event addEvent(Event event) {
+        fetchHostname(event);
         return repository.insert(event);
+    }
+
+    private void fetchHostname(Event event) {
+        Optional.of(event)
+                .map(Event::getHostId)
+                .flatMap(hostId -> {
+                    try {
+                        return spotifyConnector.getDisplayname(hostId);
+                    } catch (SpotifyException ignored) {
+                        return Optional.empty();
+                    }
+                })
+                .ifPresent(event::setHostname);
     }
 
     public Optional<Event> getEventById(String eventId) {return repository.findById(eventId); }

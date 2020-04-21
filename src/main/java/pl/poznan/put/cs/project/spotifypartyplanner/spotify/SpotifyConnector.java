@@ -4,12 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.web.client.RestTemplate;
@@ -17,25 +12,14 @@ import pl.poznan.put.cs.project.spotifypartyplanner.model.Album;
 import pl.poznan.put.cs.project.spotifypartyplanner.model.Track;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyAuthorizationException;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.exception.SpotifyRecommendationsSeedSizeException;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.AuthorizationResponse;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.GenresSeedsResponse;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.ItemsArtist;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SearchResponse;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.SpotifyPlaylistResponse;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.Tracks;
-import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.TracksResponse;
+import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.*;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.request.AbstractSpotifyRequest;
 import pl.poznan.put.cs.project.spotifypartyplanner.spotify.model.request.PlaylistRequest;
 
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -97,6 +81,19 @@ public class SpotifyConnector {
                         mapDuration(i.durationMs),
                         i.uri
                 ));
+    }
+
+    public Optional<String> getDisplayname(
+            String userId
+    ) throws SpotifyAuthorizationException {
+        return apiRequest(
+                String.format("/users/%s", URLEncoder.encode(userId, StandardCharsets.UTF_8)),
+                HttpMethod.GET,
+                UserResponse.class
+        ).map(HttpEntity::getBody)
+                .filter(Objects::nonNull)
+                .map(UserResponse::getHostname)
+                .findFirst();
     }
 
     private static String mapArtists(List<ItemsArtist> artists) {

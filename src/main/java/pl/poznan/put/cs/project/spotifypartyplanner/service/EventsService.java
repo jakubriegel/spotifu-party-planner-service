@@ -30,7 +30,7 @@ public class EventsService {
     private final EventRepository repository;
     private final SpotifyConnector spotifyConnector;
 
-    private static Map<String, Float> defaultTunableParameters = Collections.singletonMap("max_liveness", .3f);
+    private static final Map<String, Float> defaultTunableParameters = Collections.singletonMap("max_liveness", .3f);
 
     public EventsService(EventRepository repository, SpotifyConnector spotifyConnector) {
         this.repository = repository;

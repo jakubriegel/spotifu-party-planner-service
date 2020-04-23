@@ -166,6 +166,7 @@ public class EventsService {
             var tracks = new HashSet<>(e.getPlaylist().getTracks());
             tracks.addAll(trackIds);
             e.getPlaylist().setTracks(new ArrayList<>(tracks));
+            addGuestsSuggestions(e.getPlaylist(), emptyList(), trackIds);
             return e;
         }).map(e -> {
             try {

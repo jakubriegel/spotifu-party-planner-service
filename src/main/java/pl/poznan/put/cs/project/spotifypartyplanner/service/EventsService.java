@@ -143,6 +143,10 @@ public class EventsService {
             return emptyIfAuthorizationErrorOrThrow(
                     () -> spotifyConnector.getRecommendations(tracks, genres, defaultTunableParameters)
             );
+        } else if (genres.size() > 0) {
+            return emptyIfAuthorizationErrorOrThrow(
+                    () -> spotifyConnector.getRecommendations(emptyList(), genres, defaultTunableParameters)
+            );
         } else {
             return empty();
         }

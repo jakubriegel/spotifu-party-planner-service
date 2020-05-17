@@ -79,7 +79,7 @@ public class EventController {
     public ResponseEntity<EventResponse> putSuggestions(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
-    ) {
+    ) throws SpotifyException {
         try {
             var updatedEvent = service.addGuestsSuggestions(eventId, request.genres, request.tracks);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));
@@ -92,7 +92,7 @@ public class EventController {
     public ResponseEntity<EventResponse> deleteSuggestions(
             @RequestBody PlaylistSuggestionsRequest request,
             @PathVariable String eventId
-    ) {
+    ) throws SpotifyException {
         try {
             var updatedEvent = service.removeGuestsSuggestions(eventId, request.genres, request.tracks);
             return ResponseEntity.ok(fromEvent(updatedEvent, spotifyConnector));

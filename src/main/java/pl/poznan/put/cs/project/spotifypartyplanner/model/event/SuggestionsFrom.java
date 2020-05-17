@@ -1,12 +1,13 @@
 package pl.poznan.put.cs.project.spotifypartyplanner.model.event;
 
 import java.util.HashMap;
+import java.util.Map;
 
 public class SuggestionsFrom {
-    private HashMap<String, Integer> genres = new HashMap<>();
-    private HashMap<String, Integer> tracks = new HashMap<>();
+    private Map<String, Integer> genres = new HashMap<>();
+    private Map<String, Integer> tracks = new HashMap<>();
 
-    public HashMap<String, Integer> getGenres() {
+    public Map<String, Integer> getGenres() {
         return genres;
     }
 
@@ -14,11 +15,11 @@ public class SuggestionsFrom {
         this.genres = genres;
     }
 
-    public HashMap<String, Integer> getTracks() {
+    public Map<String, Integer> getTracks() {
         return tracks;
     }
 
-    public void setTracks(HashMap<String, Integer> tracks) {
+    public void setTracks(Map<String, Integer> tracks) {
         this.tracks = tracks;
     }
 }

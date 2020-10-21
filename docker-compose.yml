@@ -1,0 +1,13 @@
+version: "3.7"
+services:
+    spotify-party-planner-service:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        ports:
+            - "40001:40001"
+    db:
+        image: mongo:latest
+        ports:
+            - "40000:27017"
+
